@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: order-deployment
+  labels: 
+     app: order
+     type: rest-controller
+spec: 
+  replicas: 1
+  selector: 
+    matchLabels: 
+      app: order-pod
+  template: 
+    metadata: 
+      name: order-container
+      labels: 
+        app: order-pod
+        type: rest-controller-pod
+    spec: 
+      containers: 
+      - name: order-container
+        image: pandeych009/itlogiclab-order-microservice:0.0.10
+        imagePullPolicy: Always
+        resources: 
+          limits: 
+             memory: "512Mi"
+             cpu: "1"
+          requests:    
+             memory: "128Mi" 
+             cpu: "0.5"
+        env: 
+          - name: DB_SERVICE
+            value: order-data-service
+          - name: DB_PORT
+            value: "3306"    
+          - name: SPRING_DATASOURCE_USERNAME
+            value: cpandey
+          - name: SPRING_DATASOURCE_PASSWORD
+            value: chandan@1234
+          - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+            value: com.mysql.cj.jdbc.Driver
+        ports: 
+          - name: order-svc-port
+            containerPort: 20031
+--- 
+apiVersion: v1
+kind: Service
+metadata: 
+    name: order-service
+spec: 
+    selector: 
+        app: order-pod
+    type: NodePort 
+    ports: 
+       - targetPort: 20031
+         nodePort: 32001
+         port: 8080
+---
+#        livenessProbe: 
+#          httpGet:
+#            path: /actuator/health
+#            port: order-svc-port
+#          failureThreshold: 30
+#          periodSeconds: 60
+#          terminationGracePeriodSeconds: 60
+#          initialDelaySeconds: 55
+#        readinessProbe: 
+#          httpGet:
+#            path: /actuator/health
+#            port: order-svc-port
+#          initialDelaySeconds: 300
+#          periodSeconds: 60
+#          timeoutSeconds: 55
+
+        

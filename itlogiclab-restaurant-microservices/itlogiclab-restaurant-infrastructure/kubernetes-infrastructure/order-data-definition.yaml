@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata: 
+    name: order-data-volume
+spec: 
+    storageClassName: standard
+    capacity: 
+        storage: 256Mi
+    accessModes: 
+        - ReadWriteMany
+    hostPath: 
+        path: "/Users/pandeych445/dev/microservice/infrastructure/restaurant-kubernetes/data" #LOCAL PATH TO THE SYSTEM 
+    persistentVolumeReclaimPolicy: Retain
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: 
+    name: order-data-volume-claim
+spec: 
+    storageClassName: standard
+    accessModes:
+        - ReadWriteMany
+    resources: 
+        requests:
+           storage: 250Mi 
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+    name: order-data-script
+data:
+    init-script.sql:  |
+       create table order_address (id bigint not null, order_id bigint, city varchar(255), country varchar(255), line1 varchar(255), line2 varchar(255), state varchar(255), primary key (id)) engine=InnoDB;
+       create table order_address_seq (next_val bigint) engine=InnoDB;
+       insert into order_address_seq values ( 1 );
+       create table order_items (price decimal(38,2), quantity integer, id bigint not null, order_id bigint not null, product_id bigint, primary key (id, order_id)) engine=InnoDB;
+       create table order_items_seq (next_val bigint) engine=InnoDB;
+       insert into order_items_seq values ( 1 );
+       create table orders (price decimal(38,2), customer_id bigint, order_id bigint not null, restaurant_id bigint, tracking_id binary(16), failure_messages varchar(255), order_status enum ('APPROVED','CANCELLED','CANCELLING','PAID','PENDING'), primary key (order_id)) engine=InnoDB;
+       create table orders_seq (next_val bigint) engine=InnoDB;
+       insert into orders_seq values ( 1 );
+       alter table order_address add constraint UK_5f2547nsljs6aapep6dupb7m7 unique (order_id);
+       alter table order_address add constraint FKru9uj5vrdjaarx7l5oa19fvt2 foreign key (order_id) references orders (order_id);
+       alter table order_items add constraint FKbioxgbv59vetrxe0ejfubep1w foreign key (order_id) references orders (order_id);
+---
+apiVersion: v1
+kind: Service
+metadata: 
+    name: order-data-service
+spec: 
+   ports: 
+     - port: 3306
+       targetPort: 3306
+   clusterIP: None  #This is also termed as Headless service, where ClusterId is NOne...
+   selector:  ##SELECT ANY POD WITH LABEL mysql-app AND OPTIONAL TIER
+       app: order-data-pod
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: 
+    name: order-data-deployment
+    labels:   
+        app: order-data-deployment
+spec: 
+    selector: 
+      matchLabels:
+        app: order-data-pod
+    serviceName: mysql-h  #Headless Service Name #Master DNS Become: mysql-0.mysql-h.default.svc.cluster.local, mysql-1.mysql-h.default.svccluster.lcoal
+    replicas: 1
+    template: 
+      metadata: 
+        name: order-data-pod
+        labels: 
+          app: order-data-pod
+      spec: 
+        containers: 
+          - name: mysql-container
+            image:  mysql/mysql-server:8.0.23
+            imagePullPolicy: IfNotPresent
+            ports:
+              - containerPort: 3306
+            env:
+              - name: MYSQL_ROOT_PASSWORD
+                value: root
+              - name: MYSQL_USER
+                value: cpandey
+              - name: MYSQL_PASSWORD
+                value: chandan@1234
+              - name: MYSQL_DATABASE
+                value: orderdb
+            volumeMounts: 
+               - name: mysql-initdb ##MOUNT PATH FOR INITIAL SCRIPT TO RUN ON DB
+                 mountPath: /docker-entrypoint-initdb.d
+               - name: mysql-server-storage
+                 mountPath: /var/lib/mysql
+        volumes:
+         - name: mysql-initdb
+           configMap: 
+             name: order-data-script
+         - name: mysql-server-storage
+           persistentVolumeClaim: 
+             claimName:  order-data-volume-claim
+
+ 
+##DNS Entry {Headless Ref} is created only in 2 condition: 
+# spec section of the POD have 2 optional conf: subdomain, which shouldbe equal to name of service (mysql-h). It create subdomain: mysql-h.default.svc.cluster.lcoal
+##StatefulSet does not require the above condition. 
+## second: define hostname: as mysql-pod
+

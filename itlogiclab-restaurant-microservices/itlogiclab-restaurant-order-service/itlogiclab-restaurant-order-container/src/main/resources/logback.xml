@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+   <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />	
+    
+    <!-- property name="BASE_LOG_LOC" 		value="/Users/pandeych445/dev/microservice/infrastructure/logs/learning" /--> 
+    <property name="BASE_LOG_LOC" 		value="/opt/infrastructure/logs" />  
+    <property name="ARCHIVE_LOG_LOC" 	value="${BASE_LOG_LOC}/archived" />
+    <property name="LOG_FILE_NAME" 		value="itlogiclab-order-microservice.log" />
+    <property name="ARCHIVE_FILE_NAME" 	value="itlogiclab-order-microservice-%d{yyyy-MM-dd}.%i.log" />
+    
+	<include resource="itlogiclab-common-logback.xml"/>
+    
+     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</Pattern>
+        </layout>
+    </appender>
+
+	<!-- LOG "com.baeldung*" at TRACE level -->
+    <logger name="org.springframework" level="INFO" additivity="false">
+        <appender-ref ref="Console" /> 
+        <appender-ref ref="RollingFile" /> 
+    </logger>
+    
+    <logger name="org.hibernate" level="INFO" additivity="false">
+        <appender-ref ref="Console" /> 
+        <appender-ref ref="RollingFile" /> 
+    </logger>
+  
+</configuration>

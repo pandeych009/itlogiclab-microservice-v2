@@ -1,0 +1,15 @@
+FROM openjdk:17-jdk-slim 
+
+
+ENV CONTAINER_HOME=/opt/restaurant/order/
+ENV INFRA_CONTAINER=/opt/infrastructure
+ENV LOG_LOC=${INFRA_CONTAINER}/logs
+ENV LOG_ARCHIVED_LOC=${INFRA_CONTAINER}/logs/archived
+ENV TARGET_JAR_LOC=../../itlogiclab-restaurant-order-service/itlogiclab-restaurant-order-container/target
+
+WORKDIR ${CONTAINER_HOME}
+RUN mkdir -p ${LOG_ARCHIVED_LOC}
+
+
+COPY ${TARGET_JAR_LOC}/itlogiclab-restaurant-order-*.jar order.jar
+ENTRYPOINT ["java","-jar","/opt/restaurant/order/order.jar"]

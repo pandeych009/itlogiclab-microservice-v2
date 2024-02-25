@@ -1,0 +1,12 @@
+create table order_address (id bigint not null, order_id bigint, city varchar(255), country varchar(255), line1 varchar(255), line2 varchar(255), state varchar(255), primary key (id)) engine=InnoDB;
+create table order_address_seq (next_val bigint) engine=InnoDB;
+insert into order_address_seq values ( 1 );
+create table order_items (price decimal(38,2), quantity integer, id bigint not null, order_id bigint not null, product_id bigint, primary key (id, order_id)) engine=InnoDB;
+create table order_items_seq (next_val bigint) engine=InnoDB;
+insert into order_items_seq values ( 1 );
+create table orders (price decimal(38,2), customer_id bigint, order_id bigint not null, restaurant_id bigint, tracking_id binary(16), failure_messages varchar(255), order_status enum ('APPROVED','CANCELLED','CANCELLING','PAID','PENDING'), primary key (order_id)) engine=InnoDB;
+create table orders_seq (next_val bigint) engine=InnoDB;
+insert into orders_seq values ( 1 );
+alter table order_address add constraint UK_5f2547nsljs6aapep6dupb7m7 unique (order_id);
+alter table order_address add constraint FKru9uj5vrdjaarx7l5oa19fvt2 foreign key (order_id) references orders (order_id);
+alter table order_items add constraint FKbioxgbv59vetrxe0ejfubep1w foreign key (order_id) references orders (order_id);
